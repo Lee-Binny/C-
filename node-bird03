@@ -1,0 +1,45 @@
+# Redux-saga 연동하기
+
+### immer 도입하기
+- `npm i immer` 명령어를 사용하여 설치한다.
+- 불변성을 지켜주는 라이브러이이다.
+
+**/reducers/post.js** 
+```javascript
+import produce from 'immer';
+
+...
+const reducer = (state = initialState, action) => {
+  // state가 draft 라는 이름으로 바뀐다. (불변성과 상관없이 변경 가능)
+  return produce(state, (draft) => {
+    switch (action.type) {
+      case ADD_POST_REQUEST:
+        draft.addPostLoading = true;
+        draft.addPostDone = false;
+        draft.addPostError = null;
+        break;
+      case ADD_POST_SUCCESS:
+        draft.addPostLoading = false;
+        draft.addPostDone = true;
+        draft.mainPosts = [dummyPost(action.data), ...state.mainPosts];
+        break;
+    ...
+  });
+}
+```
+
+```javascript
+...
+
+const reducer = (state = initialState, action) => {
+  switch (action.type) {
+    case ADD_POST_REQUEST:
+      return (
+        ...state,
+        addPostLoading: true;
+        addPostDone: false;
+        addPostError: null,
+      );
+  ...
+}
+```

@@ -123,3 +123,42 @@ router.post('/images', isLoggedIn, upload.array('image'), (req, res, next) => { 
 ...
 
 ```
+
+### Lambda 이미지 리사이징
+- 여러 가지 API 처리를 하는 서버 대신에 이미지 리사이징을 해주는 작은 함수
+- 이미지를 압축헤서 S3에 저장
+- lambda 디렉토리 생성 > `npm init` 명렁어 실행 > `npm i aws-sdk sharp` 명령어 실행 > index.js 파일 생성 후 코드 입력 > `sudo apt install zip` 명령어 실행 > 
+`sudo zip -r aws-upload.zip ./*` 명령어 실행 > `sudo curl "https://awscli.amazoneaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"` 명령어 실행 > 
+`sudo unzip awscliv2.zip` 명령어 실행 > `sudo ./aws/install` 명렁어 실행 > `aws configure` 명령어 실행 후 S3 엑세스 키 입력 > `aws s3 cp "aws-upload.zip" s3://[생성한 s3 버킷명]` 명령어 실행 > AWS lambdad에서 image-resize 함수 생성 > 함수 코드 작업에서 AWS S3에서 파일 업로드 클릭 > s3에 올라간 aws-upload.zip 파일 선택 > 트리거 추가엣 s3 추가 > 접두사에 `original/` 입력하기 
+
+**/lambda/index.js**
+```javascript
+const AWS = require('aws-sdk');
+const sharp = require('sharp');
+
+const s3 = new AWS.S3();
+
+exports.handler = async (evnet, context, callback) => {
+  const Bucket = event.Records[0].s3.bucket.name; // 생성한 s3 버킷 이름
+  const Key = decodeURIComponent(event.Records[0].s3.object.key); 파일 이름
+  const filename = Key.split('/')[Key.split('/').length - 1];
+  const ext = Key.split('.')[Key.split('.').length - 1].toLowerCase();
+  // jpg 확장자느 jpeg로 변경
+  const requiredFormat = ext === 'jpg' ? 'jpeg' : ext;
+  
+  try {
+    const s3Object = await s3.getObject({ Bucket, Key }).promise();
+    const resizedImage = await sharp(s3Object.Body)
+      .resize(400, 400, { fit: 'inside' })
+      .toFormat(requireFormat)
+      .toBuffer();
+    await s3.putObject({
+      Bucket,
+      Key: `thumb/${filename}`,
+      Body: redizedImage,
+    }).promise();
+  } catch (error) {
+    console.log(error);
+    return callback(error);
+  }
+```
